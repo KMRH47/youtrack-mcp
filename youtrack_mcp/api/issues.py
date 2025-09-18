@@ -2874,7 +2874,7 @@ class IssuesClient:
 
         # Add work type if provided
         if work_type_id:
-            work_item_data["type"] = {"id": work_type_id}
+            work_item_data["type"] = {"name": work_type_id}
 
         logger.info(f"Adding work item to issue {issue_id}: {duration_minutes} minutes")
         logger.debug(f"Work item data: {work_item_data}")
@@ -2941,10 +2941,19 @@ class IssuesClient:
         logger.info(f"Getting work types for project {project_id}")
 
         try:
-            response = self.client.get(
-                f"admin/projects/{project_id}/timeTracking/workTypes",
-                params={"fields": "id,name"}
-            )
+            # Try the admin project endpoint first
+            try:
+                response = self.client.get(
+                    f"admin/projects/{project_id}/timeTracking/workTypes",
+                    params={"fields": "id,name"}
+                )
+            except Exception as admin_error:
+                logger.warning(f"Admin endpoint failed: {admin_error}, trying alternative endpoint")
+                # Fallback to general admin endpoint
+                response = self.client.get(
+                    "admin/timeTrackingSettings/workTypes",
+                    params={"fields": "id,name"}
+                )
 
             work_types = response if isinstance(response, list) else []
             logger.info(f"Retrieved {len(work_types)} work types for project {project_id}")
