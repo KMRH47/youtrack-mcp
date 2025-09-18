@@ -78,7 +78,7 @@ class TimeTracking:
                 "summary": {
                     "issue_id": issue_id,
                     "duration_logged": f"{duration_minutes} minutes",
-                    "description": description or f"Logged {duration_minutes} minutes",
+                    "description": description if description else "(no description)",
                     "date": work_date or "today"
                 }
             }
@@ -178,7 +178,7 @@ class TimeTracking:
             return self.add_work_item(
                 issue_id=issue_id,
                 duration_minutes=minutes,
-                description=description or f"Logged {time_string}"
+                description=description
             )
 
         except Exception as e:

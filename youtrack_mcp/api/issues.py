@@ -2863,7 +2863,7 @@ class IssuesClient:
         # Prepare work item data
         work_item_data = {
             "duration": {"minutes": duration_minutes},
-            "text": description or f"Logged {duration_minutes} minutes"
+            "text": description if description else ""
         }
 
         # Add date if provided, otherwise use current time
