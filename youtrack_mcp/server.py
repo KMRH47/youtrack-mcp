@@ -12,12 +12,13 @@ from typing import Dict, List, Any, Optional, Callable, Union, AsyncGenerator
 
 try:
     # Try importing from mcp_sdk (new package name)
-    from mcp_sdk.server import ToolServerBase
+    from mcp import ToolServerBase
 except ImportError:
     # Fall back to mcp (old package name)
     from mcp.server.fastmcp import FastMCP as ToolServerBase
 
 from youtrack_mcp.config import config
+from youtrack_mcp.utils import normalize_issue_id
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +48,16 @@ class YouTrackMCPServer:
         # Store the transport mode for later reference
         self.transport_mode = transport
 
+        # Build server instructions
+        instructions = config.MCP_SERVER_DESCRIPTION
+        if config.DEFAULT_PROJECT_KEY:
+            instructions += f"\n\nDefault project: {config.DEFAULT_PROJECT_KEY}. Issue numbers auto-converted to full IDs."
+
         # Initialize server with ToolServerBase
         self.server = ToolServerBase(
             name=config.MCP_SERVER_NAME,
-            instructions=config.MCP_SERVER_DESCRIPTION,
-            transport=transport,  # ToolServerBase expects 'transport' parameter
+            instructions=instructions,
+            # ToolServerBase expects 'transport' parameter
         )
 
         # Initialize tool registry
@@ -234,6 +240,13 @@ class YouTrackMCPServer:
                     f"\n\nExample: {name}({', '.join(example_params)})"
                 )
 
+        # Add usage guidance for issue tools
+        if config.DEFAULT_PROJECT_KEY:
+            if name == "get_issue_raw":
+                clean_description += "\n\n✅ RECOMMENDED: Use this for complete issue data"
+            elif name == "get_issue":
+                clean_description += "\n\n⚠️ Consider get_issue_raw for complete data instead"
+
         # Store schema in the wrapped function for access later
         wrapped_func.tool_schema = schema
 
@@ -392,6 +405,14 @@ class YouTrackMCPServer:
 
                 # Add remaining kwargs
                 processed_kwargs.update(kwargs)
+
+                # Simple normalization for issue IDs
+                if config.DEFAULT_PROJECT_KEY and "issue_id" in processed_kwargs:
+                    original = str(processed_kwargs["issue_id"])
+                    normalized = normalize_issue_id(original)
+                    processed_kwargs["issue_id"] = normalized
+                    if original != normalized:
+                        logger.info(f"Normalized issue_id: {original} → {normalized}")
 
                 # Debug log the processed parameters
                 logger.debug(

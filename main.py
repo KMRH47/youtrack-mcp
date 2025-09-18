@@ -249,6 +249,10 @@ def parse_args():
         action="store_true",
         help="Display version information and exit"
     )
+    parser.add_argument(
+        "--default-project-key",
+        help="Default project key to prepend to bare issue numbers (e.g., AGI)"
+    )
     
     return parser.parse_args()
 
@@ -268,7 +272,10 @@ def apply_cli_args(args):
     
     if args.verify_ssl is not None:
         config_dict["VERIFY_SSL"] = args.verify_ssl
-    
+
+    if args.default_project_key:
+        config_dict["DEFAULT_PROJECT_KEY"] = args.default_project_key
+
     if config_dict:
         Config.from_dict(config_dict)
 

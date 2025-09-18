@@ -52,6 +52,9 @@ class Config:
         "yes",
     )
 
+    # Default project key configuration
+    DEFAULT_PROJECT_KEY: str = os.getenv("YOUTRACK_DEFAULT_PROJECT_KEY", "")
+
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> None:
         """

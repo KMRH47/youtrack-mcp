@@ -3,8 +3,11 @@ Utility functions for YouTrack MCP server.
 """
 
 import json
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Union
+
+from youtrack_mcp.config import config
 
 
 def convert_timestamp_to_iso8601(timestamp_ms: int) -> str:
@@ -85,3 +88,57 @@ def format_json_response(data: Any) -> str:
 
     # Return formatted JSON
     return json.dumps(enhanced_data, indent=2)
+
+
+def normalize_issue_id(issue_id: str) -> str:
+    """
+    Normalize an issue ID by adding the default project key if it's just a number.
+
+    Args:
+        issue_id: The issue ID to normalize (e.g., "123" or "AGI-123")
+
+    Returns:
+        Normalized issue ID (e.g., "AGI-123")
+    """
+    if not issue_id:
+        return issue_id
+
+    # If it's already in the correct format (contains a dash), return as-is
+    if '-' in issue_id:
+        return issue_id
+
+    # If it's just a number and we have a default project key, prepend it
+    if re.match(r'^\d+$', issue_id) and config.DEFAULT_PROJECT_KEY:
+        return f"{config.DEFAULT_PROJECT_KEY}-{issue_id}"
+
+    # Otherwise, return as-is
+    return issue_id
+
+
+def normalize_query_parameter(query: str) -> str:
+    """
+    Normalize a query parameter by adding the default project key to bare issue numbers.
+
+    Args:
+        query: The query string that might contain bare issue numbers
+
+    Returns:
+        Normalized query string
+    """
+    if not query or not config.DEFAULT_PROJECT_KEY:
+        return query
+
+    # Look for standalone numbers that could be issue IDs
+    # Match numbers that are:
+    # - At start of string followed by space/end
+    # - After space followed by space/end
+    # - The entire string
+    def replace_bare_numbers(match):
+        number = match.group(1)
+        return f"{config.DEFAULT_PROJECT_KEY}-{number}"
+
+    # Replace bare numbers with project-prefixed versions
+    # This regex matches numbers that are likely issue IDs
+    normalized = re.sub(r'\b(\d{3,})\b', replace_bare_numbers, query)
+
+    return normalized
