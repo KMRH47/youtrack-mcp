@@ -26,6 +26,7 @@ from .basic_operations import BasicOperations
 from .linking import Linking
 from .attachments import Attachments
 from .utilities import Utilities
+from .time_tracking import TimeTracking
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ class IssueTools:
         self.linking = Linking(self.issues_api, self.projects_api)
         self.attachments = Attachments(self.issues_api, self.projects_api)
         self.utilities = Utilities(self.issues_api, self.projects_api)
+        self.time_tracking = TimeTracking(self.issues_api, self.projects_api)
         
         logger.info("IssueTools initialized with modular components")
 
@@ -181,12 +183,38 @@ class IssueTools:
         """Get attachment content as base64."""
         return self.attachments.get_attachment_content(issue_id, attachment_id)
 
+    # === Time Tracking Functions ===
+
+    def add_work_item(
+        self,
+        issue_id: str,
+        duration_minutes: int,
+        description: str = "",
+        work_date: Optional[str] = None,
+        work_type_id: Optional[str] = None
+    ) -> str:
+        """Add a work item (time log) to an issue."""
+        return self.time_tracking.add_work_item(issue_id, duration_minutes, description, work_date, work_type_id)
+
+    def get_work_items(self, issue_id: str) -> str:
+        """Get all work items (time logs) for an issue."""
+        return self.time_tracking.get_work_items(issue_id)
+
+    def add_spent_time(
+        self,
+        issue_id: str,
+        time_string: str,
+        description: str = ""
+    ) -> str:
+        """Add spent time using natural time formats (e.g., '1h', '30m')."""
+        return self.time_tracking.add_spent_time(issue_id, time_string, description)
+
     # === Utility Functions ===
-    
+
     def close(self) -> None:
         """Close API clients and clean up resources."""
         return self.utilities.close()
-    
+
     def get_tool_definitions(self) -> Dict[str, Dict[str, Any]]:
         """Get consolidated tool definitions from all modules."""
         return self.utilities.get_tool_definitions()
@@ -194,11 +222,12 @@ class IssueTools:
 
 __all__ = [
     "IssueTools",
-    "DedicatedUpdates", 
+    "DedicatedUpdates",
     "Diagnostics",
     "CustomFields",
     "BasicOperations",
     "Linking",
     "Attachments",
     "Utilities",
+    "TimeTracking",
 ] 

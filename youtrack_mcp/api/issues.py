@@ -2833,3 +2833,94 @@ class IssuesClient:
         logger.debug(f"Field '{field_name}' (type: {value_type}, bundle: {bundle_type}) mapped to $type: {field_type}")
         
         return field_type
+
+    def add_work_item(
+        self,
+        issue_id: str,
+        duration_minutes: int,
+        description: str = "",
+        work_date: Optional[int] = None,
+        work_type_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a work item (time log) to an issue.
+
+        Args:
+            issue_id: The ID of the issue to add work item to
+            duration_minutes: Duration in minutes
+            description: Optional description of the work performed
+            work_date: Optional timestamp in milliseconds (defaults to current time)
+            work_type_id: Optional work type ID (defaults to project's default)
+
+        Returns:
+            The created work item data
+
+        Raises:
+            YouTrackAPIError: If the request fails
+        """
+        import time
+
+        # Prepare work item data
+        work_item_data = {
+            "duration": {"minutes": duration_minutes},
+            "text": description or f"Logged {duration_minutes} minutes"
+        }
+
+        # Add date if provided, otherwise use current time
+        if work_date is not None:
+            work_item_data["date"] = work_date
+        else:
+            work_item_data["date"] = int(time.time() * 1000)  # Current time in milliseconds
+
+        # Add work type if provided
+        if work_type_id:
+            work_item_data["type"] = {"id": work_type_id}
+
+        logger.info(f"Adding work item to issue {issue_id}: {duration_minutes} minutes")
+        logger.debug(f"Work item data: {work_item_data}")
+
+        try:
+            # Use the YouTrack REST API endpoint for work items
+            response = self.client.post(
+                f"issues/{issue_id}/timeTracking/workItems",
+                data=work_item_data,
+                params={"fields": "id,duration(minutes,presentation),date,text,author(name),type(name)"}
+            )
+
+            logger.info(f"Successfully added work item to issue {issue_id}")
+            return response
+
+        except Exception as e:
+            error_msg = f"Failed to add work item to issue {issue_id}: {str(e)}"
+            logger.error(error_msg)
+            raise YouTrackAPIError(error_msg)
+
+    def get_work_items(self, issue_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all work items for an issue.
+
+        Args:
+            issue_id: The ID of the issue
+
+        Returns:
+            List of work items for the issue
+
+        Raises:
+            YouTrackAPIError: If the request fails
+        """
+        logger.info(f"Retrieving work items for issue {issue_id}")
+
+        try:
+            response = self.client.get(
+                f"issues/{issue_id}/timeTracking/workItems",
+                params={"fields": "id,duration(minutes,presentation),date,text,author(name),type(name)"}
+            )
+
+            work_items = response if isinstance(response, list) else []
+            logger.info(f"Retrieved {len(work_items)} work items for issue {issue_id}")
+            return work_items
+
+        except Exception as e:
+            error_msg = f"Failed to get work items for issue {issue_id}: {str(e)}"
+            logger.error(error_msg)
+            raise YouTrackAPIError(error_msg)
