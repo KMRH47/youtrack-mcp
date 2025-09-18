@@ -204,10 +204,16 @@ class IssueTools:
         self,
         issue_id: str,
         time_string: str,
-        description: str = ""
+        description: str = "",
+        work_date: Optional[str] = None,
+        work_type_id: Optional[str] = None
     ) -> str:
         """Add spent time using natural time formats (e.g., '1h', '30m')."""
-        return self.time_tracking.add_spent_time(issue_id, time_string, description)
+        return self.time_tracking.add_spent_time(issue_id, time_string, description, work_date, work_type_id)
+
+    def get_work_types(self, project_id: str) -> str:
+        """Get available work types for a project."""
+        return self.time_tracking.get_work_types(project_id)
 
     # === Utility Functions ===
 

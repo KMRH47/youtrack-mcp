@@ -147,7 +147,9 @@ class TimeTracking:
         self,
         issue_id: str,
         time_string: str,
-        description: str = ""
+        description: str = "",
+        work_date: Optional[str] = None,
+        work_type_id: Optional[str] = None
     ) -> str:
         """
         Add spent time to an issue using natural time formats.
@@ -159,14 +161,16 @@ class TimeTracking:
             issue_id: The ID of the issue (e.g., "DEMO-123" or "AGI-456")
             time_string: Time in natural format (e.g., "1h", "30m", "2h 15m", "90 minutes")
             description: Optional description of the work performed
+            work_date: Optional date in YYYY-MM-DD format (defaults to today)
+            work_type_id: Optional work type ID (e.g., "Development", "Documentation", "Testing")
 
         Returns:
             JSON response with the created work item details
 
         Examples:
             add_spent_time("DEMO-123", "1h", "Fixed authentication bug")
-            add_spent_time("AGI-456", "30m", "Code review")
-            add_spent_time("PROJ-789", "2h 15m", "Implementation work")
+            add_spent_time("AGI-456", "30m", "Code review", work_type_id="Development")
+            add_spent_time("PROJ-789", "2h 15m", "Implementation work", "2024-01-15", "Development")
         """
         logger.info(f"Adding spent time to issue {issue_id}: {time_string}")
 
@@ -178,7 +182,9 @@ class TimeTracking:
             return self.add_work_item(
                 issue_id=issue_id,
                 duration_minutes=minutes,
-                description=description
+                description=description,
+                work_date=work_date,
+                work_type_id=work_type_id
             )
 
         except Exception as e:
@@ -239,6 +245,44 @@ class TimeTracking:
             raise ValueError(f"Could not parse time string: '{time_string}'. Use formats like '1h', '30m', '2h 15m', or plain minutes.")
 
         return total_minutes
+
+    def get_work_types(self, project_id: str) -> str:
+        """
+        Get available work types for a project.
+
+        Args:
+            project_id: The project ID (e.g., "DEMO", "AGI")
+
+        Returns:
+            JSON response with available work types
+
+        Examples:
+            get_work_types("DEMO")
+            get_work_types("AGI")
+        """
+        logger.info(f"Getting work types for project {project_id}")
+
+        try:
+            work_types = self.issues_api.get_work_types(project_id)
+
+            formatted_response = {
+                "project_id": project_id,
+                "work_types": work_types,
+                "summary": {
+                    "total_types": len(work_types),
+                    "available_types": [wt.get("name", "Unknown") for wt in work_types]
+                }
+            }
+
+            return format_json_response(formatted_response)
+
+        except Exception as e:
+            error_msg = f"Failed to get work types for project {project_id}: {str(e)}"
+            logger.error(error_msg)
+            return format_json_response({
+                "error": error_msg,
+                "project_id": project_id
+            })
 
 
 # Standalone functions for backward compatibility

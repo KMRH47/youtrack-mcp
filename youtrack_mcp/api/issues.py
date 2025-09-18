@@ -2924,3 +2924,33 @@ class IssuesClient:
             error_msg = f"Failed to get work items for issue {issue_id}: {str(e)}"
             logger.error(error_msg)
             raise YouTrackAPIError(error_msg)
+
+    def get_work_types(self, project_id: str) -> List[Dict[str, Any]]:
+        """
+        Get available work types for a project.
+
+        Args:
+            project_id: The project ID
+
+        Returns:
+            List of available work types
+
+        Raises:
+            YouTrackAPIError: If the request fails
+        """
+        logger.info(f"Getting work types for project {project_id}")
+
+        try:
+            response = self.client.get(
+                f"admin/projects/{project_id}/timeTracking/workTypes",
+                params={"fields": "id,name"}
+            )
+
+            work_types = response if isinstance(response, list) else []
+            logger.info(f"Retrieved {len(work_types)} work types for project {project_id}")
+            return work_types
+
+        except Exception as e:
+            error_msg = f"Failed to get work types for project {project_id}: {str(e)}"
+            logger.error(error_msg)
+            raise YouTrackAPIError(error_msg)
